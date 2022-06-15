@@ -1,11 +1,12 @@
+from typing import union
 import re 
 
 #TODO validar cnpj
-def validate(cnpj:str|int) -> bool:
+def validate(cnpj:union[str,int]) -> bool:
     cnpj = clean(cnpj, validate=False)
     return True
 
-def clean(cnpj:str|int, validate=True) -> str:
+def clean(cnpj:union[str,int], validate=True) -> str:
     if isinstance(cnpj, int):
         cnpj = str(cnpj)
         
