@@ -92,3 +92,32 @@ class TestExtractTLD(unittest.TestCase):
     def test_mexican_site(self):
         site = 'http://www.google.com.mx'
         self.assertEqual(driva.site.extract_tld(site), 'com.mx')
+
+class TestRemoveTld(unittest.TestCase):
+    def test_site_simple(self):
+        site = 'http://www.driva.com.br'
+        self.assertEqual(driva.site.remove_tld(site), 'driva')
+    def test_site_without_schema(self):
+        site = 'www.driva.com.br'
+        self.assertEqual(driva.site.remove_tld(site), 'driva')
+    def test_site_only_domain(self):
+        site = 'driva.com.br'
+        self.assertEqual(driva.site.remove_tld(site), 'driva')
+    def test_site_with_subdomain(self):
+        site = 'http://app.driva.com.br'
+        self.assertEqual(driva.site.remove_tld(site), 'driva')
+    def test_complete_site(self):
+        site = 'http://www.driva.com.br/path/to/file?param=1#hash'
+        self.assertEqual(driva.site.remove_tld(site), 'driva')
+    def test_com_site(self):
+        site = 'http://www.google.com'
+        self.assertEqual(driva.site.remove_tld(site), 'google')
+    def test_mexican_site(self):
+        site = 'http://www.google.com.mx'
+        self.assertEqual(driva.site.remove_tld(site), 'google')
+    def test_invalid_site(self):
+        site = 'http://www.driva.com.idontexist'
+        self.assertEqual(driva.site.remove_tld(site, raise_if_invalid=False), None)
+    def test_without_tld(self):
+        site = 'http://www.driva'
+        self.assertEqual(driva.site.remove_tld(site, raise_if_invalid=False), None)
