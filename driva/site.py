@@ -23,6 +23,14 @@ def extract_domain(site: str, raise_if_invalid=True) -> str:
     res = tld.get_tld(site, fix_protocol=True, as_object=True)
     return res.fld
 
+def extract_subdomain(site: str, raise_if_invalid=True) -> str:
+    if not validate(site):
+        if raise_if_invalid:
+            raise ValueError("Invalid site")
+        return None
+    res = tld.get_tld(site, fix_protocol=True, as_object=True)
+    return res.subdomain
+
 def extract_tld(site: str, raise_if_invalid=True) -> str:
     if not validate(site):
         if raise_if_invalid:
@@ -30,6 +38,18 @@ def extract_tld(site: str, raise_if_invalid=True) -> str:
         return None
     res = tld.get_tld(site, fix_protocol=True, as_object=True)
     return res.tld
+
+def urls_with_protocol(site: str, raise_if_invalid=True) -> list:
+    if not validate(site):
+        if raise_if_invalid:
+            raise ValueError("Invalid site")
+        return None
+    host = extract_host(site)
+    urls = [ 
+        "http://" + host,
+        "https://" + host,
+    ]
+    return urls
 
 def remove_tld(site: str, raise_if_invalid=True) -> str:
     if not validate(site):
