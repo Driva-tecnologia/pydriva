@@ -48,6 +48,8 @@ def urls_with_protocol(site: str, raise_if_invalid=True) -> list:
     urls = [ 
         "http://" + host,
         "https://" + host,
+        "http://www." + host,
+        "https://www." + host,
     ]
     return urls
 
