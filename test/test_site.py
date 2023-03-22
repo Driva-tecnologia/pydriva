@@ -69,6 +69,9 @@ class TestExtractDomain(unittest.TestCase):
     def test_invalid_site_without_tld(self):
         site = 'http://www.driva'
         self.assertEqual(driva.site.extract_domain(site, raise_if_invalid=False), None)
+    def test_from_blogspot(self):
+        site = 'lupanza.blogspot.com.br'
+        self.assertEqual(driva.site.extract_domain(site), 'lupanza.blogspot.com.br')
 
 class TestExtractTLD(unittest.TestCase):
     def test_site_simple(self):
@@ -121,3 +124,13 @@ class TestRemoveTld(unittest.TestCase):
     def test_without_tld(self):
         site = 'http://www.driva'
         self.assertEqual(driva.site.remove_tld(site, raise_if_invalid=False), None)
+
+
+class TestSubdomains(unittest.TestCase):
+    def test_www(self):
+        site = 'http://www.driva.com.br'
+        self.assertEqual(driva.site.extract_subdomain(site), '')
+    def test_app(self):
+        site = 'http://app.driva.com.br'
+        self.assertEqual(driva.site.extract_subdomain(site), 'app')
+    
