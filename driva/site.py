@@ -29,6 +29,8 @@ def extract_subdomain(site: str, raise_if_invalid=True) -> str:
             raise ValueError("Invalid site")
         return None
     res = tld.get_tld(site, fix_protocol=True, as_object=True)
+    if res.subdomain == "www":
+        return ""
     return res.subdomain
 
 def extract_tld(site: str, raise_if_invalid=True) -> str:
