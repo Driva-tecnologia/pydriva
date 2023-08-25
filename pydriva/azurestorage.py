@@ -5,10 +5,11 @@ from azure.storage.filedatalake import (
 import os
 
 class AzureStorage:
-    def __init__(self, account_url, storage_account_key):
+    def __init__(self, account_name, credential):
+        account_url = f'https://{account_name}.dfs.core.windows.net'
         self.service_client = DataLakeServiceClient(
             account_url=account_url,
-            credential=storage_account_key
+            credential=credential
         )
 
     def get_directory_contents(self, container_name, directory_name):
@@ -68,7 +69,7 @@ class AzureStorage:
 
         return True
 
-    def upload_file(self, container_name, directory_name, local_path, file_name, overwrite=False):
+    def upload_file(self, container_name, directory_name, local_path, file_name, overwrite=True):
         file_system_client = self.service_client.get_file_system_client(file_system=container_name)
         directory_client = file_system_client.get_directory_client(directory_name)
         file_client = directory_client.get_file_client(file_name)
@@ -76,3 +77,4 @@ class AzureStorage:
         print(f'Uploading {file_name} from {local_path} to {directory_name}')
         with open(file=os.path.join(local_path, file_name), mode="rb") as data:
             file_client.upload_data(data=data, overwrite=overwrite)
+
