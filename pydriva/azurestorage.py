@@ -1,11 +1,16 @@
 
 from azure.storage.filedatalake import DataLakeServiceClient
+from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobClient
 from azure.core.exceptions import ResourceNotFoundError
 import os
 from tqdm import tqdm
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class AzureStorage:
     def __init__(self, conn_str):
+        self.credential = conn_str
         self.service_client = DataLakeServiceClient.from_connection_string(conn_str=conn_str)
 
     ########### PUBLIC METHODS ############
@@ -38,39 +43,26 @@ class AzureStorage:
 
     ########### UPLOAD ############
     def _upload_file(self, container, path, local_path):
-        local_dir = os.path.dirname(local_path)
-        local_filename = local_path.replace(local_dir, '').replace('/', '')
+        filename = os.path.basename(local_path)
+
+        if os.path.basename(path) == '':
+            blob_filename = os.path.join(path, filename)
+        else:
+            blob_filename = path
         
-        az_dir = os.path.dirname(path)
-        az_filename = path.replace(az_dir, '').replace('/', '')
-
-        if az_filename == '':
-            az_filename = local_filename
-
-        file_system_client = self.service_client.get_file_system_client(file_system=container)
-
-        directory_client = file_system_client.get_directory_client(az_dir)
-        file_client = directory_client.create_file(az_filename)
-        
+        blob = BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=blob_filename)
         with open(local_path, "rb") as data:
-            file_client.upload_data(data=data, overwrite=True)
+            blob.upload_blob(data, overwrite=True)
         
         return True
 
     def _upload_path(self, container, path, local_path):
-        for file in tqdm(os.listdir(local_path)):
-            if os.path.isfile(os.path.join(local_path, file)):
-                self._upload_file(
-                    container=container,
-                    path=os.path.join(path, file),
-                    local_path=os.path.join(local_path, file)
-                )
-            elif os.path.isdir(os.path.join(local_path, file)):
-                self._upload_path(
-                    container=container,
-                    path=os.path.join(path, file),
-                    local_path=os.path.join(local_path, file)
-                )
+        all_files = [file for file in Path(local_path).rglob('*') if file.is_file()]
+
+        for file in tqdm(all_files, desc='Upload'):
+            dirname = os.path.dirname(file) 
+            dst = os.path.join(path, dirname)+os.sep
+            self._upload_file(container, dst, file)
         return True
 
     ########### CHECK EXISTS ############
@@ -119,3 +111,14 @@ class AzureStorage:
 
     ########### OTHERS ############
     
+
+if __name__ == '__main__':
+    from dotenv import load_dotenv
+    load_dotenv()
+    AZURE_STORAGE_CONNECTION_STRING = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+    az = AzureStorage(conn_str=AZURE_STORAGE_CONNECTION_STRING)
+    az.upload(
+        container='tmp', 
+        path='test_pydriva/',
+        local_path='test_dir_sub'
+    )
