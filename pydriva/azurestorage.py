@@ -26,10 +26,8 @@ class AzureStorage:
     def exists(self, container, blob_name):
         return self._exists(container, blob_name)
 
-    def download(self, container, path, local_path='.', log=True):
-        local_path = os.path.join(local_path, os.path.basename(path))
-
-        return self._download_file(container, path, local_path, log)
+    def download(self, container, src, dest):
+        return self._download(container, src, dest)
         # return self._download_path(container, path, log)
     
     def delete(self, container, path):
@@ -75,27 +73,28 @@ class AzureStorage:
         return BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=blob_name).exists()
 
     ########### DOWNLOAD ############
-    def _download_file(self, container, path, local_path, log=True):
-        file_system_client = self.service_client.get_file_system_client(file_system=container)
+    def _download_file(self, container, src, dest):
+        filename = os.path.join(dest, os.path.basename(src))
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        blob = BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=src)
+        blob.download_blob().readinto(open(filename, 'wb'))
+
+        return True
 
 
-        if not file_system_client.get_file_client(path).exists():
-            raise ResourceNotFoundError(f'{path} does not exists')
+    def _download(self, container, src, dest, log=True):
+        dest = os.path.join(dest, os.path.basename(src))
+        blobs = self._list_blobs(container, src)
 
-        blob_list = [blob.name for blob in file_system_client.get_paths(path=path, recursive=True) if blob.is_directory == False]
+        if not src.endswith('/'):
+            src += '/'
 
-        for blob in tqdm(blob_list, desc='Download'):
-            blob_dir = os.path.dirname(blob).replace(path, '', 1).replace('/', '', 1)
-            local_dir = os.path.join(local_path, blob_dir)
-            if local_dir != '':
-                os.makedirs(local_dir, exist_ok=True)
-            file_client = file_system_client.get_file_client(blob)
-            download = file_client.download_file()
-
-            filename = os.path.join(local_dir, os.path.basename(blob))
-            with open(filename, "wb") as download_file:
-                download_file.write(download.readall())
-        
+        for blob in tqdm(blobs, desc='Download'):
+            # remove the src from the blob name
+            _src = blob.replace(src, '')
+            _dest = os.path.join(dest, os.path.dirname(_src))
+            self._download_file(container, blob, _dest)
+            
         return True
             
     ########### DELETE ############
@@ -113,4 +112,23 @@ class AzureStorage:
 
         return [blob.name for blob in blobs]
 
+    def _list_blobs(self, container, path):
+        blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.credential)
+        container_client = blob_service_client.get_container_client(container)
+        blobs = container_client.list_blob_names(name_starts_with=path)
+
+        return [blob for blob in blobs if '.' in blob]
     ########### OTHERS ############
+
+
+if __name__ == '__main__':
+    from dotenv import load_dotenv
+    load_dotenv()
+    conn_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+    az = AzureStorage(conn_str=conn_str)
+
+    az.download(
+        container='tmp',
+        src='pydriva/test_dir',
+        dest='test_pydriva'
+    )
