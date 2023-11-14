@@ -38,6 +38,9 @@ class AzureStorage:
             return self._delete(container, path)
         return False
     
+    def list(self, container, path):
+        return self._list(container, path)
+
 
     ########### PRIVATE METHODS ############
 
@@ -108,6 +111,14 @@ class AzureStorage:
             print(f'Path {path} not found')
             raise ResourceNotFoundError(f'Path {path} not found')
         return True
+
+    ########### LIST ############
+    def _list(self, container, path):
+        blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.credential)
+        container_client = blob_service_client.get_container_client(container)
+        blobs = container_client.list_blobs(name_starts_with=path)
+
+        return [blob.name for blob in blobs]
 
     ########### OTHERS ############
     
