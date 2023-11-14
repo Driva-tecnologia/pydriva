@@ -15,14 +15,14 @@ class AzureStorage:
 
     ########### PUBLIC METHODS ############
 
-    def upload(self, container, path, local_path):
-        if not os.path.exists(local_path):
-            raise Exception(f'{local_path} does not exists')
-        elif os.path.isfile(local_path):
-            return self._upload_file(container, path, local_path)
-        elif os.path.isdir(local_path):
-            return self._upload_path(container, path, local_path)
-        raise Exception(f'{local_path} is not a file or a directory')
+    def upload(self, container, src, dest):
+        if not os.path.exists(src):
+            raise Exception(f'{src} does not exists')
+        elif os.path.isfile(src):
+            return self._upload_file(container, src, dest)
+        elif os.path.isdir(src):
+            return self._upload_path(container, src, dest)
+        raise Exception(f'{src} is not a file or a directory')
         
     def check_exists(self, container, path):
         return self._check_exists(container, path)
@@ -45,27 +45,30 @@ class AzureStorage:
     ########### PRIVATE METHODS ############
 
     ########### UPLOAD ############
-    def _upload_file(self, container, path, local_path):
-        filename = os.path.basename(local_path)
+    def _upload_file(self, container, src, dest):
+        filename = os.path.basename(src)
 
-        if os.path.basename(path) == '':
-            blob_filename = os.path.join(path, filename)
+        if os.path.basename(dest) == '':
+            blob_filename = os.path.join(dest, filename)
         else:
-            blob_filename = path
+            blob_filename = dest
         
         blob = BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=blob_filename)
-        with open(local_path, "rb") as data:
+        with open(src, "rb") as data:
             blob.upload_blob(data, overwrite=True)
         
         return True
 
-    def _upload_path(self, container, path, local_path):
-        all_files = [file for file in Path(local_path).rglob('*') if file.is_file()]
+    def _upload_path(self, container, src, dest):
+        basename = os.path.basename(src)
+        all_files = [file.name for file in Path(src).rglob('*') if file.is_file()]
 
         for file in tqdm(all_files, desc='Upload'):
-            dirname = os.path.dirname(file) 
-            dst = os.path.join(path, dirname)+os.sep
-            self._upload_file(container, dst, file)
+            _src = os.path.join(src, file)
+            _dest = os.path.join(dest, basename, file)
+            
+            self._upload_file(container, _src, _dest)
+
         return True
 
     ########### CHECK EXISTS ############
