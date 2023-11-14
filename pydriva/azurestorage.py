@@ -1,7 +1,6 @@
 
 from azure.storage.filedatalake import DataLakeServiceClient
-from azure.storage.blob import BlobServiceClient
-from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobClient, BlobServiceClient
 from azure.core.exceptions import ResourceNotFoundError
 import os
 from tqdm import tqdm
@@ -24,8 +23,8 @@ class AzureStorage:
             return self._upload_path(container, src, dest)
         raise Exception(f'{src} is not a file or a directory')
         
-    def check_exists(self, container, path):
-        return self._check_exists(container, path)
+    def exists(self, container, blob_name):
+        return self._exists(container, blob_name)
 
     def download(self, container, path, local_path='.', log=True):
         local_path = os.path.join(local_path, os.path.basename(path))
@@ -34,7 +33,7 @@ class AzureStorage:
         # return self._download_path(container, path, log)
     
     def delete(self, container, path):
-        if self._check_exists(container, path):
+        if self.exists(container, path):
             return self._delete(container, path)
         return False
     
@@ -72,11 +71,8 @@ class AzureStorage:
         return True
 
     ########### CHECK EXISTS ############
-    def _check_exists(self, container, path):
-        file_system_client = self.service_client.get_file_system_client(file_system=container)
-        
-        exists = file_system_client.get_file_client(path).exists()
-        return exists
+    def _exists(self, container, blob_name):
+        return BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=blob_name).exists()
 
     ########### DOWNLOAD ############
     def _download_file(self, container, path, local_path, log=True):
@@ -104,15 +100,9 @@ class AzureStorage:
             
     ########### DELETE ############
     def _delete(self, container, path):
-        file_system_client = self.service_client.get_file_system_client(file_system=container)
-        file_client = file_system_client.get_file_client(path)
-        directory_client = file_system_client.get_directory_client(path)
-
-        try:
-            directory_client.delete_directory()
-        except ResourceNotFoundError:
-            print(f'Path {path} not found')
-            raise ResourceNotFoundError(f'Path {path} not found')
+        blob = BlobClient.from_connection_string(conn_str=self.credential, container_name=container, blob_name=path)
+        blob.delete_blob()
+        
         return True
 
     ########### LIST ############
@@ -124,15 +114,3 @@ class AzureStorage:
         return [blob.name for blob in blobs]
 
     ########### OTHERS ############
-    
-
-if __name__ == '__main__':
-    from dotenv import load_dotenv
-    load_dotenv()
-    AZURE_STORAGE_CONNECTION_STRING = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-    az = AzureStorage(conn_str=AZURE_STORAGE_CONNECTION_STRING)
-    az.upload(
-        container='tmp', 
-        path='test_pydriva/',
-        local_path='test_dir_sub'
-    )
