@@ -7,7 +7,7 @@ from datetime import datetime
 from loguru import logger
 from . import cnpj, site
 
-async def fetch(session, url, semaphoro):
+async def fetch(session, url, semaphoro, proxy=None):
     fetch_result = {
         'url': url,
         'response': '',
@@ -15,7 +15,7 @@ async def fetch(session, url, semaphoro):
         'error': '',
     }
     try:
-        async with session.get(url, timeout=15) as response:
+        async with session.get(url, timeout=15, proxy=proxy) as response:
 
             fetch_result['response'] = response
             fetch_result['content'] = await response.text()
@@ -60,7 +60,7 @@ def response_handler(fetch_result):
     return result
 
 
-async def session_worker(url_queue:Queue, semaphore_count:int=0):
+async def session_worker(url_queue:Queue, semaphore_count:int=0, proxy=None):
     session = aiohttp.ClientSession()
     semaphore = asyncio.Semaphore(semaphore_count)
 
@@ -71,7 +71,7 @@ async def session_worker(url_queue:Queue, semaphore_count:int=0):
             if url_queue.empty(): break
 
         url = url_queue.get()
-        task = asyncio.create_task(fetch(session, url, semaphore))
+        task = asyncio.create_task(fetch(session, url, semaphore, proxy))
         tasks.append(task)
 
     if tasks:
@@ -85,11 +85,11 @@ async def session_worker(url_queue:Queue, semaphore_count:int=0):
     return results
 
 
-def session_worker_sync(url_queue:Queue, results, semaphore_count:int=0):
-    results.extend(asyncio.run(session_worker(url_queue, semaphore_count)))
+def session_worker_sync(url_queue:Queue, results, semaphore_count:int=0, proxy=None):
+    results.extend(asyncio.run(session_worker(url_queue, semaphore_count, proxy)))
     return results
 
-def fast_requests(urls, workers:int=4, semaphore_count:int=0):
+def fast_requests(urls, workers:int=4, semaphore_count:int=0, proxy=None):
     url_queue = Queue()
     results = Manager().list()
 
@@ -98,7 +98,7 @@ def fast_requests(urls, workers:int=4, semaphore_count:int=0):
     
     processes = []
     for _ in range(workers):
-        process = Process(target=session_worker_sync, args=(url_queue, results, semaphore_count))
+        process = Process(target=session_worker_sync, args=(url_queue, results, semaphore_count, proxy))
         process.start()
         processes.append(process)
         
