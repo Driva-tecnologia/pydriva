@@ -21,7 +21,7 @@ class AzureStorage:
         if not os.path.exists(src):
             raise Exception(f'{src} does not exists')
         elif os.path.isfile(src):
-            return self._upload_file(container, src, dest)
+            return self._upload(container, src, dest)
         elif os.path.isdir(src):
             return self._upload(container, src, dest)
         
