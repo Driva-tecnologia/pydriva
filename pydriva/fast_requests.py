@@ -100,17 +100,22 @@ def split_list(l, n, tasks, headers):
     for i in range(0, len(l), n):
         yield (l[i:i + n], tasks, headers)
 
-def fast_request(input_generator, manage_output, headers: dict, number_of_processes: int, tasks: int):
+def fast_request(input_generator, manage_output, headers: dict = {}, number_of_processes: int = 4, tasks: int = 12):
 
+    if tasks == 0:
+        tasks = 100000000
     
     pool = multiprocessing.Pool(processes=number_of_processes)
 
+    acm = 0
+
     for bulk in input_generator:
         results = []
-        for responses_list in pool.imap_unordered(sync_worker, split_list(bulk, len(bulk)//(3*number_of_processes), tasks, headers)):  
+        for responses_list in pool.imap_unordered(sync_worker, split_list(bulk, len(bulk)//(3*number_of_processes) + 1, tasks, headers)):  
             results = results + responses_list
 
-        manage_output(results)
+        manage_output(results, acm)
+        acm += 1
         del results
         
 

@@ -42,9 +42,10 @@ def gen_input():
 
     return split_list(list, 8)
     
-def manage_output(list):
+def manage_output(list, i):
+    print(i)
     print(list)
 
 if __name__=='__main__':
 
-    pydriva.fast_requests.fast_request(gen_input(), manage_output, {}, 2, 2)
+    pydriva.fast_requests.fast_request(gen_input(), manage_output)
