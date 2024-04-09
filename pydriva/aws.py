@@ -37,7 +37,7 @@ class AwsS3:
     def exists(self, container, path):
         return self._exists(container, path)
 
-    def download(self, container, src, dest):
+    def download(self, container, src, dest="."):
         if not self.exists(container, src):
             raise Exception(f's3://{container}/{src} does not exist.')
         return self._download(container, src, dest)
