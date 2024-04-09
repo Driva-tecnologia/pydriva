@@ -80,7 +80,7 @@ class AwsS3:
             return True
         # Download File
         if os.path.isdir(dest):
-            dest += os.path.basename(src)
+            dest = os.path.join(dest, os.path.basename(src))
         response = self.aws.download_file(container, src, dest)
         return True
         
