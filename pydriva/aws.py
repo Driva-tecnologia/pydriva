@@ -3,7 +3,7 @@ import os
 from cloudpathlib import CloudPath, S3Client
 from botocore.exceptions import ClientError
 
-class AwsStorage:
+class AwsS3:
     def __init__(self, access_key, secret_key):
         self.aws = boto3.client(
             's3',
@@ -75,7 +75,7 @@ class AwsStorage:
     def _download(self, container, src, dest):
         cp = CloudPath(f"s3://{container}/{src}", client=self.cp_client)
         # Download Folder
-        if cp.isdir():
+        if cp.is_dir():
             cp.download_to(dest)
             return True
         # Download File

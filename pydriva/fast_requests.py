@@ -2,7 +2,6 @@
 import multiprocessing
 import asyncio
 import async_timeout
-import pandas as pd
 from datetime import datetime
 import numpy as np
 from time import sleep
